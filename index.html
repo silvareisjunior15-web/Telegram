@@ -72,6 +72,12 @@
                     body: JSON.stringify({ initData: tg.initData })
                 });
                 const data = await res.json();
+
+if (!res.ok) {
+    throw new Error(
+        data.detail || `Erro HTTP ${res.status}`
+    );
+}
                 
                 if (data.status === 'authenticated') {
                     if (data.has_mtproto_session) {
