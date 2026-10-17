@@ -100,7 +100,8 @@ if (!res.ok) {
                 console.error(e);
                 showStep('step-login');
                 document.getElementById('status-auth').className = 'status error';
-                document.getElementById('status-auth').textContent = 'Erro de conexão. Tente novamente.';
+                document.getElementById('status-auth').textContent =
+    'Erro: ' + (e.message || 'Falha desconhecida');
             }
         }
 
