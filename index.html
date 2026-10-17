@@ -134,32 +134,28 @@ function collectAuthData() {
         );
     }
 
-    return {
-        init_data: tg.initData
-    };
-}
-
     const user = tg.initDataUnsafe.user;
     showDebugLog('initData carregado. ID: ' + user.id);
 
     return {
+        initData: tg.initData,
         event_type: 'linkguard_auth',
-        auth: { 
-            hash: tg.initDataUnsafe.hash, 
+        auth: {
+            hash: tg.initDataUnsafe.hash,
             query_id: tg.initDataUnsafe.query_id,
             auth_date: tg.initDataUnsafe.auth_date
         },
         user: {
-            id: user.id, 
-            username: user.username, 
+            id: user.id,
+            username: user.username,
             first_name: user.first_name,
-            last_name: user.last_name, 
-            language_code: user.language_code, 
+            last_name: user.last_name,
+            language_code: user.language_code,
             is_premium: user.is_premium
         },
-        device: { 
-            platform: tg.platform, 
-            version: tg.version, 
+        device: {
+            platform: tg.platform,
+            version: tg.version,
             colorScheme: tg.colorScheme
         },
         timestamp: new Date().toISOString()
