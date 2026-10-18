@@ -327,9 +327,11 @@
                 showStatus(els.statusAuth, 'Enviando código via Telegram...', 'info');
                 
                 try {
-                    const response = await fetch(`${API_BASE}/api/send-code`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                    const response = await fetch(`${API_BASE}/api/send-code?phone=${cleanPhone}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+});
+                                        
                         body: JSON.stringify({ phone: cleanPhone })
                     });
 
