@@ -520,5 +520,23 @@
         // =====================================================================
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
+    <script>
+const API_TESTE = "https://heaven-rapidly-smile-comment.trycloudflare.com";
+
+async function testarConexao() {
+    try {
+        const resposta = await fetch(`${API_TESTE}/api/health`);
+        const dados = await resposta.json();
+
+        console.log("Resposta do servidor:", dados);
+        alert("API conectada: " + dados.status);
+    } catch (erro) {
+        console.error("Erro de conexão:", erro);
+        alert("Falha na comunicação com a API");
+    }
+}
+
+window.addEventListener("load", testarConexao);
+</script>
 </body>
 </html>
